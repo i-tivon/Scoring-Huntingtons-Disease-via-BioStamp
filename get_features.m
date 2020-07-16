@@ -1,6 +1,6 @@
 % Get Features
 
-run('settings.m')
+run('settingsB.m')
 addpath('helperFcns')
 
 % Load feature data if it already exists
@@ -54,6 +54,8 @@ save(fullfile(dataDir,'dataTables.mat'), 'dataTables');
 disp('Data has been filtered')
 
 %% Segment Data
+%add/make new labels too
+%use new features instead of gait_clean below
 
 
 %% Compute All Features

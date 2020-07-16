@@ -33,6 +33,6 @@ for i_pt = 1:npts
     legend({'X', 'Y', 'Z'})
 end
 
-suptitle(sprintf('%s task %s sensor', task, sensor))
+sgtitle(sprintf('%s task %s sensor', task, sensor))
 
 end

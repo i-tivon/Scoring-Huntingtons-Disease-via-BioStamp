@@ -1,7 +1,7 @@
 % runPipeline
 clear all
 
-run('settings.m')
+run('settingsB.m')
 addpath('helperFcns')
  
 Pts= (1:numPatients);
@@ -143,10 +143,11 @@ subscores= {'Gait', 'TandemGait', ...
     'Bradykinesia_body_', ...
     'combined_subscores'};
 
-labels.combined_subscores = sum(labels{:,[11,12,15,20,21,22,23]},2); 
+labels.combined_subscores = sum(labels{:,[11,12,20,21,22,23]},2);  %removed 15
 
 % iterate through all subscores
-for i_scr = (1:length(subscores))
+% for i_scr = (1:length(subscores))
+for i_scr = (10)
     
     type= subscores{i_scr};     % subscore type
     scrs=labels.(type);         % True subscores
@@ -172,10 +173,32 @@ for pt_test=1:numPatients
     reg_labels = scrs(pt_train);
     reg_labels_test = scrs(pt_test);
     
-    trn_mn= mean(features_all(pt_train,:)); trn_std=std(features_all(pt_train,:));
-    features= normalize(features_all(pt_train,:));                % all training set features
-    features_test = (features_all(pt_test,:)-trn_mn)./trn_std;    % all test set features
+    %discretize into bins of 10
+    edges = 0:10:80;
+    reg_labels = discretize(reg_labels,edges);
+    reg_labels_test = discretize(reg_labels_test,edges);
+    
+    % instead of 312, input 100 features that have high variance and low ...
+    %correlation with each other
 
+    newftsVar = features_all;
+%     [B, I] =  sort(var(newftsVar), 'descend');
+%     newftsVar = newftsVar(:,I(1:150)); %features with highest variance
+%     
+%     %feature correlation
+%     ftsCorr = corr(newftsVar);
+%     newftsCorr = abs(ftsCorr) >= .7; % binarize correlation matrix
+%     [B2, I2] = sort(sum(newftsCorr));
+%     newftsCorr = newftsVar(:,I2(1:100));
+    newftsCorr = newftsVar;
+    %standardize - changed features_all to newftsCorr
+    trn_mn= mean(newftsCorr(pt_train,:)); trn_std=std(newftsCorr(pt_train,:));
+    features= normalize(newftsCorr(pt_train,:));                % all training set features
+    features_test = (newftsCorr(pt_test,:)-trn_mn)./trn_std;    % all test set features
+
+ 
+
+    
     disp('Selecting Features...')
     [selected_fts, selected_test_fts, flabels]= selectFeats(features, features_test, ...
         reg_labels, featureTables.labels, taskList, type, false);
@@ -183,49 +206,50 @@ for pt_test=1:numPatients
 
     disp('Training Classifiers ...')
     regressionlearner_mx= array2table([selected_fts, reg_labels], 'VariableNames', [flabels', 'predictor']);
-    [class_models, modelList, validationRMSE] = trainRegressionModels(regressionlearner_mx);
-
+    %[class_models, modelList, validationRMSE] = trainRegressionModels(regressionlearner_mx);
+    
+    [trainedClassifier, validationAccuracy] = trainClassifier2(regressionlearner_mx);
     disp('Tabulating results ...')
 
-    model_performance= zeros(length(modelList), 3); 
-    for model_num= 1:length(modelList)
-        chosenModel= class_models{model_num};
-        model_name= chosenModel.model_name;
-
-        % This function calculates testing and training accuracy, and saves to
-        % excel file in dataDir
-        [trn_ME, tst_ME, trntst_corrs, y_tst] = getModelResults(chosenModel, ...
-            model_name, selected_fts, selected_test_fts, reg_labels,...
-            reg_labels_test, flabels, rng, false);
-
-        model_performance(model_num,:)=[trn_ME, tst_ME, y_tst];
-    end
-    
-    cv_model_performance{pt_test}= model_performance;
-    
+%     model_performance= zeros(length(modelList), 3); 
+%     for model_num= 1:length(modelList)
+%         chosenModel= class_models{model_num};
+%         model_name= chosenModel.model_name;
+% 
+%         % This function calculates testing and training accuracy, and saves to
+%         % excel file in dataDir
+%         [trn_ME, tst_ME, trntst_corrs, y_tst] = getModelResults(chosenModel, ...
+%             model_name, selected_fts, selected_test_fts, reg_labels,...
+%             reg_labels_test, flabels, rng, false);
+% 
+%         model_performance(model_num,:)=[trn_ME, tst_ME, y_tst];
+%     end
+%     
+%     cv_model_performance{pt_test}= model_performance;
+%     
 end
-
-
-% Compile results
-cv_mat= cell2mat(cv_model_performance);
-error= cv_mat(:,3:3:end)-scrs';  
-reg_results_table= table(error,'RowNames', modelList);
-reg_results_table.pcnt_error=reg_results_table.error/rng(2)*100;
-reg_results_table.abs_mn_error_HD =  mean(abs(reg_results_table.error(:,HDPts)),2);
-reg_results_table.abs_mn_error_HD_pcnt =  reg_results_table.abs_mn_error_HD/rng(2)*100;
-reg_results_table.abs_mn_error_all= mean(abs(reg_results_table.error),2);
-reg_results_table.abs_mn_error_all_pcnt= reg_results_table.abs_mn_error_all/rng(2)*100
-
-% Tabulate how often each feature was selected throughout cross validation
-allfts= vertcat(cv_feats{:}); ufts= unique(allfts);
-feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
-[a, b]=sort(feat_freqs); 
-ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
-
-save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
-    'reg_results_table', 'ft_counts_table', 'rng')
-
-fprintf('%s CV done\n', type)
+% 
+% 
+% % Compile results
+% cv_mat= cell2mat(cv_model_performance);
+% error= cv_mat(:,3:3:end)-scrs';  
+% reg_results_table= table(error,'RowNames', modelList);
+% reg_results_table.pcnt_error=reg_results_table.error/rng(2)*100;
+% reg_results_table.abs_mn_error_HD =  mean(abs(reg_results_table.error(:,HDPts)),2);
+% reg_results_table.abs_mn_error_HD_pcnt =  reg_results_table.abs_mn_error_HD/rng(2)*100;
+% reg_results_table.abs_mn_error_all= mean(abs(reg_results_table.error),2);
+% reg_results_table.abs_mn_error_all_pcnt= reg_results_table.abs_mn_error_all/rng(2)*100
+% 
+% % Tabulate how often each feature was selected throughout cross validation
+% allfts= vertcat(cv_feats{:}); ufts= unique(allfts);
+% feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
+% [a, b]=sort(feat_freqs); 
+% ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
+% 
+% save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
+%     'reg_results_table', 'ft_counts_table', 'rng')
+% 
+% fprintf('%s CV done\n', type)
 
 end
 

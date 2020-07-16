@@ -3,7 +3,7 @@
 dd=dir('Data/Results/*.mat');
 load('rawData/labels.mat')
 
-run('settings.m')
+run('settingsB.m')
 addpath(genpath('helperFcns'))
  
 Pts= (1:numPatients);
