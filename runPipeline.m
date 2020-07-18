@@ -182,9 +182,9 @@ for pt_test=1:numPatients
     %correlation with each other
 
     newftsVar = features_all;
-%     [B, I] =  sort(var(newftsVar), 'descend');
-%     newftsVar = newftsVar(:,I(1:150)); %features with highest variance
-%     
+    [B, I] =  sort(var(newftsVar), 'descend');
+    newftsVar = newftsVar(:,I(1:10)); %features with highest variance
+    
 %     %feature correlation
 %     ftsCorr = corr(newftsVar);
 %     newftsCorr = abs(ftsCorr) >= .7; % binarize correlation matrix
@@ -199,23 +199,27 @@ for pt_test=1:numPatients
  
 
     
-    disp('Selecting Features...')
+%     disp('Selecting Features...')
     [selected_fts, selected_test_fts, flabels]= selectFeats(features, features_test, ...
         reg_labels, featureTables.labels, taskList, type, false);
-    cv_feats{pt_test}=flabels; 
-
+  
+    
+    cv_feats{pt_test}=flabels;  
+    
     disp('Training Classifiers ...')
     regressionlearner_mx= array2table([selected_fts, reg_labels], 'VariableNames', [flabels', 'predictor']);
     %[class_models, modelList, validationRMSE] = trainRegressionModels(regressionlearner_mx);
     
-    [trainedClassifier, validationAccuracy] = trainClassifier2(regressionlearner_mx);
+    [trainedClassifiers2, modelList, validationAccuracies] = trainClassifier2(regressionlearner_mx);
     disp('Tabulating results ...')
-
+    class_models  = trainedClassifiers2;
 %     model_performance= zeros(length(modelList), 3); 
-%     for model_num= 1:length(modelList)
-%         chosenModel= class_models{model_num};
-%         model_name= chosenModel.model_name;
-% 
+    model_performance= zeros(length(modelList), 1); 
+    
+    for model_num= 1:length(modelList)
+        chosenModel= class_models{model_num};
+        model_name= chosenModel.model_name;
+
 %         % This function calculates testing and training accuracy, and saves to
 %         % excel file in dataDir
 %         [trn_ME, tst_ME, trntst_corrs, y_tst] = getModelResults(chosenModel, ...
@@ -224,8 +228,9 @@ for pt_test=1:numPatients
 % 
 %         model_performance(model_num,:)=[trn_ME, tst_ME, y_tst];
 %     end
-%     
-%     cv_model_performance{pt_test}= model_performance;
+        model_performance(model_num,:) = [validationAccuracies(model_num)];
+     end
+     cv_model_performance{pt_test}= model_performance;
 %     
 end
 % 
@@ -240,16 +245,19 @@ end
 % reg_results_table.abs_mn_error_all= mean(abs(reg_results_table.error),2);
 % reg_results_table.abs_mn_error_all_pcnt= reg_results_table.abs_mn_error_all/rng(2)*100
 % 
-% % Tabulate how often each feature was selected throughout cross validation
-% allfts= vertcat(cv_feats{:}); ufts= unique(allfts);
-% feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
-% [a, b]=sort(feat_freqs); 
-% ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
-% 
+%%
+
+% Tabulate how often each feature was selected throughout cross validation
+allfts= vertcat(cv_feats{:}); ufts= unique(allfts);
+feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
+[a, b]=sort(feat_freqs); 
+ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
+
 % save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
 %     'reg_results_table', 'ft_counts_table', 'rng')
-% 
-% fprintf('%s CV done\n', type)
+save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
+     'ft_counts_table', 'rng')
+fprintf('%s CV done\n', type)
 
 end
 
