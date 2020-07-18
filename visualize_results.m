@@ -13,7 +13,7 @@ CtrlPts = Pts(~logical(labels.PtStatus));
 cols=[[69, 124, 214]; [190,8,4]; [140,42,195];[75,184,166];[242,224,43];[74,156,85];...
    [80,80,80]; [255,255,255]]/255;
 
-labels.combined_subscores=sum(labels{:,[11,12,15,20,21,22,23]},2); 
+labels.combined_subscores=sum(labels{:,[11,12,20,21,22,23]},2); 
 
 %% Get characteristics of Dataset
 

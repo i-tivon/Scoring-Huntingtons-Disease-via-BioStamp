@@ -146,7 +146,8 @@ subscores= {'Gait', 'TandemGait', ...
 labels.combined_subscores = sum(labels{:,[11,12,20,21,22,23]},2);  %removed 15
 
 % iterate through all subscores
-% for i_scr = (1:length(subscores))
+% to go through all subscores, need to change classifier to take in range?
+%for i_scr = (1:length(subscores))
 for i_scr = (10)
     
     type= subscores{i_scr};     % subscore type
@@ -173,10 +174,12 @@ for pt_test=1:numPatients
     reg_labels = scrs(pt_train);
     reg_labels_test = scrs(pt_test);
     
-    %discretize into bins of 10
-    edges = 0:10:80;
-    reg_labels = discretize(reg_labels,edges);
-    reg_labels_test = discretize(reg_labels_test,edges);
+    if strcmp(type, 'combined_subscores')
+        %discretize into bins of 10
+        edges = 0:10:80;
+        reg_labels = discretize(reg_labels,edges);
+        reg_labels_test = discretize(reg_labels_test,edges);
+    end
     
     % instead of 312, input 100 features that have high variance and low ...
     %correlation with each other
@@ -261,7 +264,8 @@ fprintf('%s CV done\n', type)
 
 end
 
-%% Calculate Overall Model Score:
+%% Calculate Overall Model Score: 
+%note: have not adapted new code for this yet
 
 type= 'combined_subscores'; % type of UHDRS subscore to predict
 
@@ -269,7 +273,7 @@ load(fullfile(dataDir,'/Results/Binary_Classification.mat'))
 load([dataDir,'/Results/' type, '.mat']) 
 
 i_binmod= 1; % index of binary classifier model to use
-i_regmod= 7; % index of regression model to use
+i_regmod= 1; % index of regression model to use
 
 missed= cellfun(@str2num, strsplit(bin_results_table.missed{i_binmod},' '));
 FN= missed(ismember(HDPts, missed));        % index of false negatives
