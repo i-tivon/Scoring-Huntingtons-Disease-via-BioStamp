@@ -25,5 +25,7 @@ fscmrmr better for larger datasets
 (try windowed feats!) in getFeatures
     
  
+--> use lasso again
+diff model? var/low corr
 
 

@@ -236,11 +236,11 @@ for pt_test=1:numPatients
      cv_model_performance{pt_test}= model_performance;
 %     
 end
-% 
+% TODO get predictions for each patient
 % 
 % % Compile results
 % cv_mat= cell2mat(cv_model_performance);
-% error= cv_mat(:,3:3:end)-scrs';  
+% error= cv_mat(:,3:3:end)-scrs';  %every third col: ytsts(predictions) - true scores
 % reg_results_table= table(error,'RowNames', modelList);
 % reg_results_table.pcnt_error=reg_results_table.error/rng(2)*100;
 % reg_results_table.abs_mn_error_HD =  mean(abs(reg_results_table.error(:,HDPts)),2);
