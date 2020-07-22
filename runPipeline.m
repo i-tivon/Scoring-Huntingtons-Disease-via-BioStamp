@@ -156,6 +156,7 @@ for i_scr = (10)
     
     cv_reg_feats= cell(1, numPatients);
     cv_reg_model_performance= cell(1,numPatients); 
+    cv_val_acc= cell(1,numPatients); 
     
     % Set score range (range is the total possible score a patient could
     % get in the categories counted). 
@@ -216,6 +217,7 @@ for pt_test=1:numPatients
     
     [trainedClassifiers2, modelList, validationAccuracies ,valPredictions] = trainClassifier2(regressionlearner_mx);
     disp('Tabulating results ...')
+    cv_val_acc{pt_test} = validationAccuracies;
     class_models  = trainedClassifiers2;
     model_performance= zeros(length(modelList), 3); 
     %model_performance= zeros(length(modelList), 1); 
@@ -257,7 +259,7 @@ feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
 ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
 
 save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
-    'reg_results_table', 'ft_counts_table', 'rng')
+    'reg_results_table', 'ft_counts_table', 'rng', 'cv_val_acc')
 
 fprintf('%s CV done\n', type)
 
