@@ -65,7 +65,7 @@ for pt_test=1:numPatients
     
     disp('Selecting Features...')
     [selected_fts, selected_test_fts, flabels]= selectFeats(features,features_test, ...
-        labels_PtStatus, featureTables.labels, taskList, type, true);
+        labels_PtStatus, featureTables.labels, taskList, type, true, true);
     
     cv_feats{pt_test}=flabels; 
 
@@ -148,6 +148,7 @@ labels.combined_subscores = sum(labels{:,[11,12,20,21,22,23]},2);  %removed 15
 % iterate through all subscores
 % to go through all subscores, need to change classifier to take in range?
 %for i_scr = (1:length(subscores))
+%still need to adjust code to run for other subscores
 for i_scr = (10)
     
     type= subscores{i_scr};     % subscore type
@@ -185,9 +186,9 @@ for pt_test=1:numPatients
     %correlation with each other
 
     newftsVar = features_all;
-    [B, I] =  sort(var(newftsVar), 'descend');
-    newftsVar = newftsVar(:,I(1:10)); %features with highest variance
-    
+%     [B, I] =  sort(var(newftsVar), 'descend');
+%     newftsVar = newftsVar(:,I(1:10)); %features with highest variance
+%     
 %     %feature correlation
 %     ftsCorr = corr(newftsVar);
 %     newftsCorr = abs(ftsCorr) >= .7; % binarize correlation matrix
@@ -204,7 +205,7 @@ for pt_test=1:numPatients
     
 %     disp('Selecting Features...')
     [selected_fts, selected_test_fts, flabels]= selectFeats(features, features_test, ...
-        reg_labels, featureTables.labels, taskList, type, false);
+        reg_labels, featureTables.labels, taskList, type, false, true);
   
     
     cv_feats{pt_test}=flabels;  
@@ -213,41 +214,40 @@ for pt_test=1:numPatients
     regressionlearner_mx= array2table([selected_fts, reg_labels], 'VariableNames', [flabels', 'predictor']);
     %[class_models, modelList, validationRMSE] = trainRegressionModels(regressionlearner_mx);
     
-    [trainedClassifiers2, modelList, validationAccuracies] = trainClassifier2(regressionlearner_mx);
+    [trainedClassifiers2, modelList, validationAccuracies ,valPredictions] = trainClassifier2(regressionlearner_mx);
     disp('Tabulating results ...')
     class_models  = trainedClassifiers2;
-%     model_performance= zeros(length(modelList), 3); 
-    model_performance= zeros(length(modelList), 1); 
+    model_performance= zeros(length(modelList), 3); 
+    %model_performance= zeros(length(modelList), 1); 
     
     for model_num= 1:length(modelList)
         chosenModel= class_models{model_num};
         model_name= chosenModel.model_name;
 
-%         % This function calculates testing and training accuracy, and saves to
-%         % excel file in dataDir
-%         [trn_ME, tst_ME, trntst_corrs, y_tst] = getModelResults(chosenModel, ...
-%             model_name, selected_fts, selected_test_fts, reg_labels,...
-%             reg_labels_test, flabels, rng, false);
-% 
-%         model_performance(model_num,:)=[trn_ME, tst_ME, y_tst];
-%     end
-        model_performance(model_num,:) = [validationAccuracies(model_num)];
-     end
+        % This function calculates testing and training accuracy, and saves to
+        % excel file in dataDir
+        [trn_ME, tst_ME, trntst_corrs, y_tst] = getModelResults(chosenModel, ...
+            model_name, selected_fts, selected_test_fts, reg_labels,...
+            reg_labels_test, flabels, rng, false);
+
+        model_performance(model_num,:)=[trn_ME, tst_ME, y_tst];
+    end
+%         model_performance(model_num,:) = validationAccuracies(model_num);
+     %end
      cv_model_performance{pt_test}= model_performance;
 %     
 end
-% TODO get predictions for each patient
-% 
-% % Compile results
-% cv_mat= cell2mat(cv_model_performance);
-% error= cv_mat(:,3:3:end)-scrs';  %every third col: ytsts(predictions) - true scores
-% reg_results_table= table(error,'RowNames', modelList);
-% reg_results_table.pcnt_error=reg_results_table.error/rng(2)*100;
-% reg_results_table.abs_mn_error_HD =  mean(abs(reg_results_table.error(:,HDPts)),2);
-% reg_results_table.abs_mn_error_HD_pcnt =  reg_results_table.abs_mn_error_HD/rng(2)*100;
-% reg_results_table.abs_mn_error_all= mean(abs(reg_results_table.error),2);
-% reg_results_table.abs_mn_error_all_pcnt= reg_results_table.abs_mn_error_all/rng(2)*100
-% 
+
+% Compile results
+cv_mat= cell2mat(cv_model_performance);
+error= cv_mat(:,3:3:end)-scrs'; 
+reg_results_table= table(error,'RowNames', modelList);
+reg_results_table.pcnt_error=reg_results_table.error/rng(2)*100;
+reg_results_table.abs_mn_error_HD =  mean(abs(reg_results_table.error(:,HDPts)),2);
+reg_results_table.abs_mn_error_HD_pcnt =  reg_results_table.abs_mn_error_HD/rng(2)*100;
+reg_results_table.abs_mn_error_all= mean(abs(reg_results_table.error),2);
+reg_results_table.abs_mn_error_all_pcnt= reg_results_table.abs_mn_error_all/rng(2)*100
+
 %%
 
 % Tabulate how often each feature was selected throughout cross validation
@@ -256,16 +256,15 @@ feat_freqs= cellfun(@(x) sum(ismember(allfts,x)), ufts);
 [a, b]=sort(feat_freqs); 
 ft_counts_table= table(ufts(b), a, 'VariableNames', {'Feature', 'count'});
 
-% save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
-%     'reg_results_table', 'ft_counts_table', 'rng')
 save([dataDir,'/Results/' type, '.mat'],'cv_feats', 'cv_model_performance', 'type', ...
-     'ft_counts_table', 'rng')
+    'reg_results_table', 'ft_counts_table', 'rng')
+
 fprintf('%s CV done\n', type)
 
 end
 
 %% Calculate Overall Model Score: 
-%note: have not adapted new code for this yet
+
 
 type= 'combined_subscores'; % type of UHDRS subscore to predict
 
@@ -276,7 +275,7 @@ i_binmod= 1; % index of binary classifier model to use
 i_regmod= 1; % index of regression model to use
 
 missed= cellfun(@str2num, strsplit(bin_results_table.missed{i_binmod},' '));
-FN= missed(ismember(HDPts, missed));        % index of false negatives
+FN= missed(ismember(missed, HDPts));        % index of false negatives 
 FP= missed(~ismember(missed, HDPts));       % index of false positives
 
 totalScores=zeros(28,1);
@@ -285,10 +284,10 @@ totalScores(FN)=0;
 
 final_error= mean(abs(totalScores));
 final_error_pcnt= final_error/rng(2)*100;
-percentile= [prctile(abs(totalScores),0), prctile(abs(totalScores),50), prctile(abs(totalScores),90)]/rng(2)*100
+percentile= [prctile(abs(totalScores),0), prctile(abs(totalScores),50), prctile(abs(totalScores),90)]/rng(2)*100;
 
 
-fprintf(['Using the %s classifier and %s regression model to predict %s.\n',...
+fprintf(['Using the %s classifier and %s classification model to predict %s.\n',...
     'Mean error magnitude: %0.2f, normalized mean error: %0.2f%%\n'],...
 bin_results_table.Properties.RowNames{i_binmod}, ...
 reg_results_table.Properties.RowNames{i_regmod}, type, ...

@@ -28,4 +28,17 @@ fscmrmr better for larger datasets
 --> use lasso again
 diff model? var/low corr
 
+--------
+7/22
+change classifier code to save valPredictions
+brought back getModelResults
 
+all of runPipeline now works!
+
+save plots based on 
+A: lasso, no var or min corr, classify into bins
+B: no lasso, yes var
+C: classify not bins?
+D: top 10 var
+E: some combo of var and min corr
+F: just min corr

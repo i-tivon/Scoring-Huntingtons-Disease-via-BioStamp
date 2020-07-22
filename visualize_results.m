@@ -5,7 +5,9 @@ load('rawData/labels.mat')
 
 run('settingsB.m')
 addpath(genpath('helperFcns'))
- 
+addpath(genpath('Data'))
+load('Data/dataTables.mat');
+
 Pts= (1:numPatients);
 HDPts= Pts(logical(labels.PtStatus));
 CtrlPts = Pts(~logical(labels.PtStatus));
@@ -13,7 +15,7 @@ CtrlPts = Pts(~logical(labels.PtStatus));
 cols=[[69, 124, 214]; [190,8,4]; [140,42,195];[75,184,166];[242,224,43];[74,156,85];...
    [80,80,80]; [255,255,255]]/255;
 
-labels.combined_subscores=sum(labels{:,[11,12,20,21,22,23]},2); 
+labels.combined_subscores=sum(labels{:,[11,12,20,21,22,23]},2); %no finger taps
 
 %% Get characteristics of Dataset
 
@@ -24,21 +26,21 @@ histogram(labels.combined_subscores)
 % Display Raw Data, select task and sensor
 task= taskList{3}; sensor= 'S3'; 
 
-figure(1); clf; 
+figure(2); clf; 
 plotRawData(dataTables, 'clean', task, sensor, HDPts(1:end/2))
 
-figure(2); clf;
+figure(3); clf;
 plotRawData(dataTables, 'clean', task, sensor, CtrlPts(1:end/2))
 
 
 %% Plot Error Distribution for all models
 
-figure(3); clf; hold on
 figure(4); clf; hold on
+figure(5); clf; hold on
 
 % subscore results
 subscore_results=table(); 
-mods= [2,3,7]; % select which models we want
+mods= [1]; % select which models we want
 clear all_ft_counts
 sortedScore = table();
 sortedScoreHD = table();
@@ -51,7 +53,7 @@ i_mat=1;
 for name= {dd.name}
     load(sprintf('Data/Results/%s', name{1}))
     
-    if any(strcmp(type, {'binary', 'Rigidity_RIGHTArm', 'FingerTaps_RIGHT'}))
+    if any(strcmp(type, {'Binary_Classification', 'Rigidity_RIGHTArm', 'FingerTaps_LEFT', 'FingerTaps_RIGHT'}))
         continue
     end
     
@@ -67,7 +69,7 @@ for name= {dd.name}
     y2= abs(reg_results_table.pcnt_error(mods,HDPts)');
     
     figure(3); %clf; hold on
-    h=plot(x, y1, 'o', 'markersize', 5)
+    h=plot(x, y1, 'o', 'markersize', 5);
     set(h, {'Color'}, {cols(1,:); cols(2,:); cols(3,:)});
     plot(xval'+[-.06; .06], [mean(reg_results_table.pcnt_error(mods,HDPts),2),mean(reg_results_table.pcnt_error(mods,HDPts),2)]', 'black')
     xticklabels(reg_results_table.Properties.RowNames(mods))

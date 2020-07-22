@@ -1,5 +1,5 @@
-function [trainedClassifiers, modelList, validationAccuracies] = trainClassifier2(trainingData)
-% [trainedClassifier, validationAccuracy] = trainClassifier(trainingData)
+function [trainedClassifiers, modelList, validationAccuracies, validationPredictions] = trainClassifier2(trainingData)
+% [trainedClassifier, validationAccuracy] = trainClassifier2(trainingData)
 % returns a trained classifier and its accuracy. This code recreates the
 % classification model trained in Classification Learner app. Use the
 % generated code to automate training the same model with new data, or to
@@ -91,7 +91,7 @@ modelList{ctr}=trainedClassifiers{ctr}.model_name;
 partitionedModel = crossval(trainedClassifiers{ctr}.ClassificationDiscriminant, 'KFold', 5);
 
 % Compute validation predictions
-[validationPredictions, validationScores] = kfoldPredict(partitionedModel);
+[validationPredictions{ctr}, validationScores{ctr}] = kfoldPredict(partitionedModel);
 
 % Compute validation accuracy
 validationAccuracies(ctr) = 1 - kfoldLoss(partitionedModel, 'LossFun', 'ClassifError');
